@@ -1,14 +1,22 @@
 import pytest
-# מייבאים את הפונקציות שרוצים לבדוק מתוך קובץ האפליקציה app.py
-# (נניח שיש לך שם פונקציה בשם add_numbers או פונקציה שמחזירה סטטוס)
-from app import main_logic # שנה את השם לפונקציה אמיתית שקיימת אצלך ב-app.py
+# מייבאים את אובייקט ה-app האמיתי מהקובץ app.py שלך
+from app import app
 
-def test_success_case():
-    """בדיקה של מקרה תקין"""
-    result = main_logic(2, 3)
-    assert result == 5  # assert בודק שהתוצאה שחזרה שווה למה שציפינו
+@pytest.fixture
+def client():
+    # מגדירים קליינט זמני לבדיקות של Flask
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        yield client
 
-def test_invalid_input():
-    """בדיקה שהקוד מתמודד נכון עם קלט לא תקין או זורק שגיאה מתאימה"""
-    with pytest.raises(TypeError):
-        main_logic("string", 3)
+def test_home_route(client):
+    # בדיקה עבור דף הבית (/)
+    response = client.get('/')
+    assert response.status_code == 200
+    assert b"Hello, DevOps World!" in response.data
+
+def test_greet_route(client):
+    # בדיקה עבור הנתיב הדינמי (/hello/DevOps)
+    response = client.get('/hello/DevOps')
+    assert response.status_code == 200
+    assert b"Hello DevOps, welcome to my Flask server!" in response.data
