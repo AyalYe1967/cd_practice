@@ -42,31 +42,29 @@ pipeline {
         }
     }
 
-         stage('Deploy to Remote EC2') {
-                     environment {
-                        AWS_ACCOUNT_ID = '992382545251'
-                        AWS_REGION     = 'us-east-1'
-                        ECR_REPO       = 'a_y/cd'
-                        IMAGE_TAG      = "v${BUILD_NUMBER}"
-                        EC2_IP         = '18.206.245.246'
-                     }
-                     steps {
-                         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'KEY_FILE', usernameVariable: 'EC2_USER')]) {
-                             sh """
-                                 # שינוי הרשאות לקובץ המפתח שיהיה מאובטח (רק לקריאה של ג'נקינס)
-                                 chmod 600 \${KEY_FILE}
-                                 
-                                 # התחברות והרצה בשרת המרוחק
-                                 ssh -i \${KEY_FILE} -o StrictHostKeyChecking=no \${EC2_USER}@${EC2_IP} "
-                                     aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                                     docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
-                                     docker rm -f flask-app-prod || true
-                                     docker run -d --name flask-app-prod -p 5000:5000 ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
-                                 "
-                             """
-                         }
-                     }
-                 }
+        stage('Deploy to Remote EC2') {
+                    environment {
+                       AWS_ACCOUNT_ID = '992382545251'
+                       AWS_REGION     = 'us-east-1'
+                       ECR_REPO       = 'a_y/cd'
+                       IMAGE_TAG      = "v${BUILD_NUMBER}"
+                       EC2_IP         = '18.206.245.246'
+                       EC2_USER       = 'ubuntu'
+                    }
+                    steps {
+                        // התוסף דואג להכל ברקע בצורה מאובטחת
+                        sshagent(['ec2-ssh-key']) {
+                            sh """
+                                ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
+                                    aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                                    docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+                                    docker rm -f flask-app-prod || true
+                                    docker run -d --name flask-app-prod -p 5000:5000 ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+                                "
+                            """
+                        }
+                    }
+                }
         
    }
 }
