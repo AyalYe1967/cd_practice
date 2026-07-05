@@ -13,7 +13,7 @@ pipeline {
         stage('Test') {
             steps {
                 echo "start first test steps"
-                sh "pytest"
+                sh 'docker run --rm my-app:latest pytest'
                 echo "done test.."
             }
         }
