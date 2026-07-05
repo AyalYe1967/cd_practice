@@ -52,10 +52,11 @@ pipeline {
                EC2_USER       = 'ubuntu'
             }
             steps {
-                sshagent(['ec2-ssh-key']) {
+                // משתמשים ב-file כדי לשלוף את קובץ ה-PEM כנתיב זמני במערכת
+                withCredentials([file(credentialsId: 'ec2-ssh-key', variable: 'KEY_FILE')]) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                        ssh -i \${KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
+                            aws Ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
                             docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
                             docker rm -f flask-app-prod || true
                             docker run -d --name flask-app-prod -p 5000:5000 ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
