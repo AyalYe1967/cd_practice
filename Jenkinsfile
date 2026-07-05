@@ -52,10 +52,14 @@ pipeline {
                        EC2_USER       = 'ubuntu'
                     }
                     steps {
-                        // התוסף דואג להכל ברקע בצורה מאובטחת
-                        sshagent(['ec2-ssh-key']) {
+                        // שימוש ב-file מתאים בדיוק ל-Secret file שהעלינו
+                        withCredentials([file(credentialsId: 'ec2-ssh-key', variable: 'KEY_FILE')]) {
                             sh """
-                                ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
+                                # הבטחת הרשאות מאובטחות לקובץ שהוזרק
+                                chmod 400 \${KEY_FILE}
+                                
+                                # חיבור וביצוע ה-Deploy
+                                ssh -i \${KEY_FILE} -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
                                     aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
                                     docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
                                     docker rm -f flask-app-prod || true
