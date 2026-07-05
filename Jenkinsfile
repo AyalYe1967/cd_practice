@@ -2,17 +2,18 @@ pipeline {
     agent any
 
     stages {
-        stage('Build'){
+        stage('Build') {
             steps {
                 echo "start build step.."
                 script {
+                    // שימוש בתוסף - תקין!
                     docker.build("my-app:latest")
                 }
                 echo "finish build step"
-                }
+            }
         }
 
-        stage('Test'){
+        stage('Test') {
             steps {
                 echo "start first test steps"
                 sh "pytest"
@@ -20,20 +21,27 @@ pipeline {
             }
         }
 
-        stage('Push to ecr') { 
-            environment {
-               AWS_ACCOUNT_ID = '992382545251'
-               AWS_REGION     = 'us-east-1'
-               ECR_REPO       = 'a_y/cd'
-               IMAGE_TAG      = "v${BUILD_NUMBER}" 
-            }
-                    steps {
-                        sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-        
-                        sh "docker tag my-app:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
-        
-                        sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
+        stage('Push to ecr') {
+            steps {
+                script {
+                    // משתנים מקומיים לשלב ה-Push
+                    def awsAccountId = '992382545251'
+                    def awsRegion    = 'us-east-1'
+                    def ecrRepo      = 'a_y/cd'
+                    def imageTag     = "v${env.BUILD_NUMBER}"
+                    def ecrUrl       = "${awsAccountId}.dkr.ecr.${awsRegion}.amazonaws.com"
+
+                    echo "Logging in and pushing to ECR using Jenkins Docker Plugin..."
+                    
+                    // שימוש בתוסף הנייטיב של ג'נקינס כדי לעשות Push ללא פקודת docker במערכת
+                    // הערה: נדרש להגדיר Credentials בג'נקינס עבור ה-AWS Access Key אם השרת לא מחובר ל-IAM Role
+                    docker.withRegistry("https://${ecrUrl}") {
+                        def myImage = docker.image("my-app:latest")
+                        myImage.push(imageTag)
+                        myImage.push("latest")
                     }
                 }
-        }    
-   } 
+            }
+        }
+    }
+}
