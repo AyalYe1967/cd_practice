@@ -1,7 +1,7 @@
 pipeline {
     agent any
 
-    stages{
+    stages {
         stage('Build'){
             steps {
                 echo "start build step.."
@@ -35,5 +35,5 @@ pipeline {
                         sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
                     }
                 }
-            }
-        }
+        }    
+   } 
