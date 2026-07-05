@@ -53,6 +53,10 @@ pipeline {
                      steps {
                          withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'KEY_FILE', usernameVariable: 'EC2_USER')]) {
                              sh """
+                                 # שינוי הרשאות לקובץ המפתח שיהיה מאובטח (רק לקריאה של ג'נקינס)
+                                 chmod 600 \${KEY_FILE}
+                                 
+                                 # התחברות והרצה בשרת המרוחק
                                  ssh -i \${KEY_FILE} -o StrictHostKeyChecking=no \${EC2_USER}@${EC2_IP} "
                                      aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
                                      docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
