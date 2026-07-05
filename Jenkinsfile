@@ -7,6 +7,7 @@ pipeline {
                 echo "start build step.."
                 script {
                     docker.build("my-app:latest")
+                }
                 echo "finish build step"
                 }
         }
