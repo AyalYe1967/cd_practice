@@ -5,7 +5,8 @@ pipeline {
         stage('Build'){
             steps {
                 echo "start build step.."
-                sh "docker build -t my-app:latest ."
+                script {
+                    docker.build("my-app:latest")
                 echo "finish build step"
                 }
         }
