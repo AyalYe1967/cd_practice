@@ -1,8 +1,8 @@
 FROM python:3.11-slim
 WORKDIR app
-COPY requirements.txt
+COPY requirements.txt .
 RUN pip install requirements.txt
-COPY .
+COPY . .
 EXPOSE 5000
 CMD ["python", "app.py"]
 
